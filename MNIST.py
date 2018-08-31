@@ -28,36 +28,14 @@ tf.reset_default_graph()
 X = tf.placeholder(dtype=tf.float32, shape=[None, NUMBER_OF_INPUTS])
 y_ = tf.placeholder(dtype=tf.float32, shape=[None])
 
-weights = {
-    'W1': tf.Variable(tf.zeros([NUMBER_OF_INPUTS, LAYER_1_NODES]), name='weights1'),
-    'W2': tf.Variable(tf.zeros([LAYER_1_NODES, LAYER_2_NODES]), name="weights2"),
-    'W3': tf.Variable(tf.zeros([LAYER_2_NODES, LAYER_3_NODES]), name="weights3"),
-    'out': tf.Variable(tf.zeros([LAYER_3_NODES, NUMBER_OF_OUTPUTS]), name="output")
-}
-
-biases = {
-    'b1': tf.Variable(tf.zeros([LAYER_1_NODES]), name="biases1"),
-    'b2': tf.Variable(tf.zeros([LAYER_2_NODES]), name="biases2"),
-    'b3': tf.Variable(tf.zeros([LAYER_3_NODES]), name="biases3"),
-    'out': tf.Variable(tf.zeros([NUMBER_OF_OUTPUTS]), name="output")
-}
-
-
 def neural_network(x):
-    l1 = tf.add(tf.matmul(x, weights['W1']), biases['b1'])
-    l1 = tf.nn.relu(l1)
+    l1 = tf.layers.dense(x, LAYER_1_NODES, activation=tf.nn.relu)
+    l2 = tf.layers.dense(l1, LAYER_2_NODES, activation=tf.nn.relu)
+    l3 = tf.layers.dense(l2, LAYER_3_NODES, activation=tf.nn.relu)
+    dropout = tf.layers.dropout(l3, reate=0.2)
+    output = tf.layers.dense(dropout, NUMBER_OF_OUTPUTS, activation=tf.nn.softmax)
 
-    l2 = tf.add(tf.matmul(l1, weights['W2']), biases['b2'])
-    l2 = tf.nn.relu(l2)
-
-    l3 = tf.add(tf.matmul(l2, weights['W3']), biases['b3'])
-    l3 = tf.nn.relu(l3)
-
-    dropout = tf.layers.dropout(l3, rate=0.2)
-
-    y = tf.add(tf.matmul(dropout, weights['out']), biases['out'])
-
-    return y
+    return output
 
 
 Y = neural_network(X)
