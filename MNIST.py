@@ -28,27 +28,28 @@ LAYER_3_NODES = 50
 tf.reset_default_graph()
 
 X = tf.placeholder(dtype=tf.float32, shape=[None, NUMBER_OF_INPUTS])
-y_ = tf.placeholder(dtype=tf.float32, shape=[None])
+y_ = tf.placeholder(dtype=tf.float32, shape=[None, NUMBER_OF_OUTPUTS])
+
 
 def neural_network(x):
     l1 = tf.layers.dense(x, LAYER_1_NODES, activation=tf.nn.relu)
     l2 = tf.layers.dense(l1, LAYER_2_NODES, activation=tf.nn.relu)
     l3 = tf.layers.dense(l2, LAYER_3_NODES, activation=tf.nn.relu)
-    dropout = tf.layers.dropout(l3, reate=0.2)
+    dropout = tf.layers.dropout(l3, rate=0.2)
     output = tf.layers.dense(dropout, NUMBER_OF_OUTPUTS, activation=tf.nn.softmax)
 
     return output
 
 
 Y = neural_network(X)
-choice = tf.nn.softmax(Y)
+probability = tf.nn.softmax(Y)
+choice = tf.argmax(Y, axis=1)
+# correct_prediction = tf.equal(tf.argmax(choice, 1), tf.argmax(y_, 1))
 
-correct_prediction = tf.equal(tf.argmax(choice, 1), tf.argmax(y_, 1))
-
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, dtype=tf.float32))
-
-onehot = tf.one_hot(indices=tf.cast(y_, dtype=tf.int32), depth=NUMBER_OF_OUTPUTS)
-cost = tf.losses.softmax_cross_entropy(onehot, Y)
+# accuracy = tf.reduce_mean(tf.cast(correct_prediction, dtype=tf.float32))
+accuracy, acc_op = tf.metrics.accuracy(y_, choice)
+# onehot = tf.one_hot(indices=tf.cast(y_, dtype=tf.int32), depth=NUMBER_OF_OUTPUTS)
+cost = tf.losses.softmax_cross_entropy(y_, Y)
 
 optimizer = tf.train.AdamOptimizer(learning_rate=1e-3)
 train = optimizer.minimize(cost)
