@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from tensorflow.examples.tutorials.mnist import input_data
 
-mnist = input_data.read_data_sets("./data/MNIST", one_hot=True)
+mnist = input_data.read_data_sets("./data/MNIST")
 
 image_height, image_width = 28, 28
 
@@ -16,7 +16,7 @@ print(y_train.shape)
 x_test = mnist.train.images
 y_test = mnist.train.labels
 
-EPOCHS = 1000
+EPOCHS = 10000
 BATCH_SIZE = 50
 
 NUMBER_OF_INPUTS = 784
@@ -28,7 +28,7 @@ LAYER_3_NODES = 50
 tf.reset_default_graph()
 
 X = tf.placeholder(dtype=tf.float32, shape=[None, NUMBER_OF_INPUTS])
-y_ = tf.placeholder(dtype=tf.float32, shape=[None, NUMBER_OF_OUTPUTS])
+y_ = tf.placeholder(dtype=tf.float32, shape=[None])
 
 
 def neural_network(x):
@@ -42,14 +42,14 @@ def neural_network(x):
 
 
 Y = neural_network(X)
-probability = tf.nn.softmax(Y)
-choice = tf.argmax(Y, axis=1)
-# correct_prediction = tf.equal(tf.argmax(choice, 1), tf.argmax(y_, 1))
+choice = tf.nn.softmax(Y)
 
-# accuracy = tf.reduce_mean(tf.cast(correct_prediction, dtype=tf.float32))
-accuracy, acc_op = tf.metrics.accuracy(y_, choice)
-# onehot = tf.one_hot(indices=tf.cast(y_, dtype=tf.int32), depth=NUMBER_OF_OUTPUTS)
-cost = tf.losses.softmax_cross_entropy(y_, Y)
+correct_prediction = tf.equal(tf.argmax(choice, 1), tf.argmax(y_))
+
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, dtype=tf.float32))
+
+onehot = tf.one_hot(indices=tf.cast(y_, dtype=tf.int32), depth=NUMBER_OF_OUTPUTS)
+cost = tf.losses.softmax_cross_entropy(onehot, Y)
 
 optimizer = tf.train.AdamOptimizer(learning_rate=1e-3)
 train = optimizer.minimize(cost)
