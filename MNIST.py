@@ -18,7 +18,7 @@ y_test = np.asarray(mnist.train.labels, dtype=np.int32)
 print(x_test.shape)
 print(y_test.shape)
 
-EPOCHS = 1000
+EPOCHS = 1600
 BATCH_SIZE = 50
 
 NUMBER_OF_INPUTS = 784
@@ -50,7 +50,6 @@ probability = tf.nn.softmax(Y)
 correct_prediction = tf.equal(tf.argmax(probability, 1), tf.argmax(y_, 1))
 
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, dtype=tf.float32))
-# accuracy, accuracy_op = tf.metrics.accuracy(labels=y_, predictions=choice)
 
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=Y))
 
@@ -60,6 +59,7 @@ train = optimizer.minimize(cost)
 init = tf.global_variables_initializer()
 
 with tf.Session() as sess:
+
     sess.run(init)
 
     for epoch in range(EPOCHS):
