@@ -15,15 +15,17 @@ print(y_train.shape)
 
 x_test = mnist.train.images
 y_test = mnist.train.labels
+print(x_test.shape)
+print(y_test.shape)
 
 EPOCHS = 10000
 BATCH_SIZE = 50
 
 NUMBER_OF_INPUTS = 784
 NUMBER_OF_OUTPUTS = 10
-LAYER_1_NODES = 50
-LAYER_2_NODES = 100
-LAYER_3_NODES = 50
+LAYER_1_NODES = 256
+LAYER_2_NODES = 512
+LAYER_3_NODES = 256
 
 tf.reset_default_graph()
 
@@ -36,7 +38,7 @@ def neural_network(x):
     l2 = tf.layers.dense(l1, LAYER_2_NODES, activation=tf.nn.relu)
     l3 = tf.layers.dense(l2, LAYER_3_NODES, activation=tf.nn.relu)
     dropout = tf.layers.dropout(l3, rate=0.2)
-    output = tf.layers.dense(dropout, NUMBER_OF_OUTPUTS, activation=tf.nn.softmax)
+    output = tf.layers.dense(dropout, NUMBER_OF_OUTPUTS)
 
     return output
 
