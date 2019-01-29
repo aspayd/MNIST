@@ -1,4 +1,4 @@
-from code import *
+from main import *
 import imageio
 
 
