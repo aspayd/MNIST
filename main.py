@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
+training = True
+testing = True
+
 # Prepare the dataset:
 mnist = tf.keras.datasets.mnist.load_data()
 
@@ -57,13 +60,13 @@ class NeuralNetwork:
 
         self.accuracy, self.accuracy_op = tf.metrics.accuracy(labels=self.y, predictions=self.choice)
 
-        optimizer = tf.train.AdamOptimizer(learning_rate=1e-3)
+        optimizer = tf.train.AdamOptimizer(learning_rate=1e-2)
         self.train_op = optimizer.minimize(self.cost, global_step=tf.train.get_global_step())
 
 
 # TODO: Prepare the dataset batches
 BATCH_SIZE = 50
-EPOCHS = 5000
+EPOCHS = 10000
 load_checkpoint = False
 
 path = "./mnist-nn/"
@@ -87,68 +90,94 @@ if not os.path.exists(path):
     os.makedirs(path)
 
 # TODO: Train the model
-init = tf.global_variables_initializer()
+init = tf.local_variables_initializer()
 
 saver = tf.train.Saver(max_to_keep=2)
 
-with tf.Session() as sess:
+if training:
+    with tf.Session() as sess:
 
-    if load_checkpoint:
+        if load_checkpoint:
+            checkpoint = tf.train.get_checkpoint_state(path)
+            saver.restore(sess, checkpoint.model_checkpoint_path)
+        else:
+            sess.run(tf.global_variables_initializer())
+
+        sess.run(init)
+        sess.run(iterator.initializer)
+
+        final_accuracy = 0
+
+        for step in range(EPOCHS):
+            new_batch = sess.run(features)
+
+            x_batch = new_batch[0]
+            y_batch = new_batch[1]
+
+            sess.run((nn.train_op, nn.accuracy_op), feed_dict={nn.x: x_batch, nn.y: y_batch})
+
+            loss, acc = sess.run((nn.cost, nn.accuracy), feed_dict={nn.x: x_batch, nn.y: y_batch})
+
+            final_accuracy = acc
+
+            if step % 10 == 0:
+                acc_graph = np.append(acc_graph, acc)
+                loss_graph = np.append(loss_graph, loss)
+
+            if step % 100 == 0:
+                print("Epoch: {}/{}, Acc: {:0.03f}, Loss: {:0.03f}".format(step, EPOCHS, acc, loss))
+                # print("Saving checkpoint")
+                # saver.save(sess, path + "mnist", step)
+
+        print("Finished the Training Session with an Accuracy of {:0.03f}".format(final_accuracy))
+        print("\nSaving the final checkpoint for the training session.")
+        saver.save(sess, path + "mnist", step)
+
+        plt.figure(1, (8, 4))
+        plt.subplot(1, 2, 1)
+        plt.plot(acc_graph, 'g-')
+        plt.xlabel('steps')
+        plt.ylabel('accuracy')
+
+        plt.subplot(1, 2, 2)
+        plt.plot(loss_graph)
+        plt.xlabel('steps')
+        plt.ylabel('loss')
+
+if testing:
+    # TODO: Test the model
+    with tf.Session() as sess:
         checkpoint = tf.train.get_checkpoint_state(path)
         saver.restore(sess, checkpoint.model_checkpoint_path)
-    else:
-        sess.run(tf.local_variables_initializer())
 
-    sess.run(init)
-    sess.run(iterator.initializer)
+        sess.run(init)
 
-    final_accuracy = 0
+        for image, label in zip(x_test, y_test):
+            sess.run(nn.accuracy_op, feed_dict={nn.x: [image], nn.y: label})
+        print("Testing accuracy: {:0.03f}".format(sess.run(nn.accuracy)))
 
-    for step in range(EPOCHS):
-        new_batch = sess.run(features)
+# TODO: Select 10 numbers to guess
+with tf.Session() as sess:
+    checkpoint = tf.train.get_checkpoint_state(path)
+    saver.restore(sess, checkpoint.model_checkpoint_path)
 
-        x_batch = new_batch[0]
-        y_batch = new_batch[1]
+    indexes = np.random.choice(len(x_test), 10, replace=False)
 
-        sess.run((nn.train_op, nn.accuracy_op), feed_dict={nn.x: x_batch, nn.y: y_batch})
+    plot_num = 0
 
-        loss, acc = sess.run((nn.cost, nn.accuracy), feed_dict={nn.x: x_batch, nn.y: y_batch})
+    for index in indexes:
+        plot_num += 1
 
-        final_accuracy = acc
+        guess = sess.run(nn.choice, feed_dict={nn.x: [x_test[index]]})
 
-        if step % 10 == 0:
-            acc_graph = np.append(acc_graph, acc)
-            loss_graph = np.append(loss_graph, loss)
+        guess = str(guess[0])
+        answer = str(y_test[index])
 
-        if step % 100 == 0:
-            print("Epoch: {}/{}, Acc: {:0.03f}, Loss: {:0.03f}".format(step, EPOCHS, acc, loss))
-            # print("Saving checkpoint")
-            # saver.save(sess, path + "mnist", step)
+        plt.figure(1, (5, 5))
+        plt.subplot(5, 2, plot_num).axis('off')
+        plt.title("G: " + guess + " A: " + answer)
+        plt.imshow(np.reshape(x_test[index], [28, 28]), cmap="Greys")
 
-    print("Finished the Training Session with an Accuracy of {:0.03f}".format(final_accuracy))
-    print("\nSaving the final checkpoint for the training session.")
-    saver.save(sess, path + "mnist", step)
-
-    plt.figure(1, (8, 4))
-    plt.subplot(1, 2, 1)
-    plt.plot(acc_graph, 'g-')
-    plt.xlabel('steps')
-    plt.ylabel('accuracy')
-
-    plt.subplot(1, 2, 2)
-    plt.plot(loss_graph)
-    plt.xlabel('steps')
-    plt.ylabel('loss')
-
-    test_image = x_test[5000]
-    test_label = y_test[5000]
-
-    test_label = np.asarray(test_label, dtype=np.int32)
-
-    plt.figure(2, (4, 4))
-    plt.title(test_label)
-    plt.imshow(np.reshape(test_image, [28, 28]), cmap="Greys")
-
-    print("Guess: " + str(sess.run(nn.choice, feed_dict={nn.x: np.reshape(test_image, [-1, 784])})))
+    plt.tight_layout()
 
     plt.show()
